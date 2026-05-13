@@ -13,6 +13,9 @@ use App\Wallet\Payment\Elements\PaymentTypeElement;
 use App\Wallet\Payment\Elements\ReceiverInfoElement;
 use App\Wallet\Payment\Elements\SenderInfoElement;
 use App\Wallet\Payment\Elements\TransferInfoElement;
+use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -46,6 +49,11 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        RateLimiter::for('webhooks', function (Request $request) {
+            $token = $request->route('token', $request->ip());
+
+            return Limit::perMinute((int) config('wallet.throttle_per_minute', 60))
+                ->by('webhook:'.$token);
+        });
     }
 }

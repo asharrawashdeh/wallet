@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Client;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\RateLimiter;
 use Tests\TestCase;
 
 class WebhookSecurityTest extends TestCase
@@ -81,6 +82,22 @@ class WebhookSecurityTest extends TestCase
 
         $this->postWebhook('foodics', $client->webhook_token, '20250615156,50#NOHMAC01#')
             ->assertStatus(202);
+    }
+
+    public function test_throttle_returns_429_when_limit_exceeded(): void
+    {
+        config(['wallet.throttle_per_minute' => 3]);
+        RateLimiter::clear('webhook:');
+
+        $client = Client::query()->create(['name' => 'Throttle client']);
+
+        for ($i = 1; $i <= 3; $i++) {
+            $body = sprintf('20250615100,00#THROT%04d#', $i);
+            $this->postWebhook('foodics', $client->webhook_token, $body)->assertStatus(202);
+        }
+
+        $this->postWebhook('foodics', $client->webhook_token, '20250615100,00#THROT0004#')
+            ->assertStatus(429);
     }
 
     public function test_each_bank_uses_its_own_secret(): void

@@ -18,4 +18,9 @@ return [
         'foodics' => env('WEBHOOK_SECRET_FOODICS'),
         'acme' => env('WEBHOOK_SECRET_ACME'),
     ],
+
+    /*
+    | Maximum webhook requests per client token per minute.
+    */
+    'throttle_per_minute' => (int) env('WEBHOOK_THROTTLE_PER_MINUTE', 60),
 ];
