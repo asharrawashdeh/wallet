@@ -42,6 +42,12 @@ class SimulateWebhookCommand extends Command
             return self::FAILURE;
         }
 
+        if (! $client->is_test) {
+            $this->error("Client {$clientId} is not a test client. Set is_test=true to allow simulation.");
+
+            return self::FAILURE;
+        }
+
         $lines = [];
         for ($i = 0; $i < $lineCount; $i++) {
             $ref = str_pad((string) ($i + 1), 10, '0', STR_PAD_LEFT);

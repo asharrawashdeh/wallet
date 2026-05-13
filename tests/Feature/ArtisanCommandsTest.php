@@ -13,7 +13,7 @@ class ArtisanCommandsTest extends TestCase
 
     public function test_simulate_webhook_foodics(): void
     {
-        $client = Client::query()->create(['name' => 'Test']);
+        $client = Client::query()->create(['name' => 'Test', 'is_test' => true]);
 
         $this->artisan('wallet:simulate-webhook', ['bank' => 'foodics', 'client' => $client->id, '--lines' => 3])
             ->assertSuccessful()
@@ -28,7 +28,7 @@ class ArtisanCommandsTest extends TestCase
 
     public function test_simulate_webhook_acme(): void
     {
-        $client = Client::query()->create(['name' => 'Test']);
+        $client = Client::query()->create(['name' => 'Test', 'is_test' => true]);
 
         $this->artisan('wallet:simulate-webhook', ['bank' => 'acme', 'client' => $client->id])
             ->assertSuccessful();
@@ -39,7 +39,7 @@ class ArtisanCommandsTest extends TestCase
     public function test_simulate_webhook_succeeds_with_hmac_secret_configured(): void
     {
         config(['wallet.bank_secrets.foodics' => 'sim-test-secret']);
-        $client = Client::query()->create(['name' => 'Test']);
+        $client = Client::query()->create(['name' => 'Test', 'is_test' => true]);
 
         $this->artisan('wallet:simulate-webhook', ['bank' => 'foodics', 'client' => $client->id])
             ->assertSuccessful();
@@ -47,9 +47,18 @@ class ArtisanCommandsTest extends TestCase
         $this->assertDatabaseCount('transactions', 1);
     }
 
+    public function test_simulate_webhook_rejected_for_non_test_client(): void
+    {
+        $client = Client::query()->create(['name' => 'Production client']);
+
+        $this->artisan('wallet:simulate-webhook', ['bank' => 'foodics', 'client' => $client->id])
+            ->assertFailed()
+            ->expectsOutputToContain('not a test client');
+    }
+
     public function test_simulate_webhook_unknown_bank_fails(): void
     {
-        $client = Client::query()->create(['name' => 'Test']);
+        $client = Client::query()->create(['name' => 'Test', 'is_test' => true]);
 
         $this->artisan('wallet:simulate-webhook', ['bank' => 'unknown', 'client' => $client->id])
             ->assertFailed();

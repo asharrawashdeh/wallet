@@ -11,7 +11,15 @@ class Client extends Model
     protected $fillable = [
         'name',
         'webhook_token',
+        'is_test',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'is_test' => 'boolean',
+        ];
+    }
 
     protected static function booted(): void
     {

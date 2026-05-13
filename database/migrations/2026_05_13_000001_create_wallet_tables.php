@@ -12,6 +12,7 @@ return new class extends Migration
             $table->id();
             $table->string('name')->nullable();
             $table->string('webhook_token', 64)->unique();
+            $table->boolean('is_test')->default(false);
             $table->timestamps();
         });
 
