@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Client;
 use App\Models\WebhookReceipt;
 use App\Wallet\Banking\BankAdapterResolver;
+use App\Wallet\Enums\IngestionStatus;
 use App\Wallet\WalletIngestionGate;
 use App\Wallet\WebhookLineDispatcher;
 use Illuminate\Http\Request;
@@ -53,7 +54,7 @@ class WebhookController extends Controller
             'bank' => strtolower($bank),
             'raw_body' => $rawBody,
             'line_count' => $nonEmptyLineCount,
-            'ingestion_status' => 'pending_dispatch',
+            'ingestion_status' => IngestionStatus::PendingDispatch,
         ]);
 
         Log::info('Webhook received.', [

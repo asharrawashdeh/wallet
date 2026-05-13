@@ -23,6 +23,16 @@ class ImportTransactionLineJob implements ShouldQueue
     use Queueable;
     use SerializesModels;
 
+    public int $tries = 3;
+
+    /**
+     * Exponential backoff: 2^attempt * 5 seconds (10s, 20s, 40s, …).
+     */
+    public function backoff(): int
+    {
+        return (int) (2 ** $this->attempts() * 5);
+    }
+
     public function __construct(
         public int $webhookReceiptId,
         public int $clientId,

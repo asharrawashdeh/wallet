@@ -4,6 +4,7 @@ namespace App\Wallet;
 
 use App\Jobs\ImportTransactionLineJob;
 use App\Models\WebhookReceipt;
+use App\Wallet\Enums\IngestionStatus;
 use Illuminate\Bus\Batch;
 use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Log;
@@ -43,11 +44,11 @@ final class WebhookLineDispatcher
 
         // Mark dispatched before launching the batch so the finally callback
         // (which may fire inline with a sync queue) always runs after this state.
-        $receipt->update(['ingestion_status' => 'dispatched']);
+        $receipt->update(['ingestion_status' => IngestionStatus::Dispatched]);
 
         $batch = Bus::batch($jobs)
             ->finally(function (Batch $batch) use ($receiptId) {
-                $status = $batch->failedJobs > 0 ? 'failed' : 'completed';
+                $status = $batch->failedJobs > 0 ? IngestionStatus::Failed : IngestionStatus::Completed;
                 WebhookReceipt::query()
                     ->whereKey($receiptId)
                     ->update(['ingestion_status' => $status]);
@@ -55,7 +56,7 @@ final class WebhookLineDispatcher
                 Log::info('Webhook receipt batch finished.', [
                     'receipt_id' => $receiptId,
                     'batch_id' => $batch->id,
-                    'ingestion_status' => $status,
+                    'ingestion_status' => $status->value,
                     'total_jobs' => $batch->totalJobs,
                     'failed_jobs' => $batch->failedJobs,
                 ]);

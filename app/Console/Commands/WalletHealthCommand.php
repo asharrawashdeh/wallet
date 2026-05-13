@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use App\Models\Transaction;
 use App\Models\WebhookReceipt;
+use App\Wallet\Enums\IngestionStatus;
 use App\Wallet\WalletIngestionGate;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
@@ -33,7 +34,7 @@ class WalletHealthCommand extends Command
             ->groupBy('ingestion_status')
             ->orderBy('ingestion_status')
             ->get()
-            ->map(fn ($r) => [$r->ingestion_status, $r->count, $r->total_lines])
+            ->map(fn ($r) => [$r->ingestion_status->value ?? $r->ingestion_status, $r->count, $r->total_lines])
             ->toArray();
 
         if ($rows === []) {
@@ -48,12 +49,12 @@ class WalletHealthCommand extends Command
     private function renderBatchSummary(): void
     {
         $stuckDispatched = WebhookReceipt::query()
-            ->where('ingestion_status', 'dispatched')
+            ->where('ingestion_status', IngestionStatus::Dispatched)
             ->where('updated_at', '<', now()->subMinutes(10))
             ->count();
 
         $failedReceipts = WebhookReceipt::query()
-            ->where('ingestion_status', 'failed')
+            ->where('ingestion_status', IngestionStatus::Failed)
             ->count();
 
         if ($stuckDispatched > 0) {

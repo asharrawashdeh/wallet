@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Models\WebhookReceipt;
+use App\Wallet\Enums\IngestionStatus;
 use App\Wallet\WalletIngestionGate;
 use App\Wallet\WebhookLineDispatcher;
 use Illuminate\Console\Command;
@@ -22,7 +23,7 @@ class DispatchPendingWebhooksCommand extends Command
         }
 
         $receipts = WebhookReceipt::query()
-            ->where('ingestion_status', 'pending_dispatch')
+            ->where('ingestion_status', IngestionStatus::PendingDispatch)
             ->orderBy('id')
             ->get();
 

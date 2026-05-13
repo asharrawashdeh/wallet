@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Wallet\Enums\IngestionStatus;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -15,6 +16,13 @@ class WebhookReceipt extends Model
         'ingestion_status',
         'batch_id',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'ingestion_status' => IngestionStatus::class,
+        ];
+    }
 
     public function client(): BelongsTo
     {

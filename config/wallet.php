@@ -23,4 +23,11 @@ return [
     | Maximum webhook requests per client token per minute.
     */
     'throttle_per_minute' => (int) env('WEBHOOK_THROTTLE_PER_MINUTE', 60),
+
+    /*
+    | Maximum webhook request body size in bytes. Requests exceeding this
+    | limit are rejected with 413 before any parsing or storage occurs.
+    | Default: 2 MB.
+    */
+    'max_body_bytes' => (int) env('WEBHOOK_MAX_BODY_BYTES', 2 * 1024 * 1024),
 ];

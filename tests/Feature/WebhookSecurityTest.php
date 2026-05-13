@@ -84,6 +84,27 @@ class WebhookSecurityTest extends TestCase
             ->assertStatus(202);
     }
 
+    public function test_oversized_body_returns_413(): void
+    {
+        config(['wallet.max_body_bytes' => 100]);
+        $client = Client::query()->create(['name' => 'Size client']);
+
+        $body = str_repeat('20250615100,00#BIGREF#' . "\n", 10);
+        $this->assertGreaterThan(100, strlen($body));
+
+        $this->postWebhook('foodics', $client->webhook_token, $body)
+            ->assertStatus(413);
+    }
+
+    public function test_body_within_limit_is_accepted(): void
+    {
+        config(['wallet.max_body_bytes' => 10000]);
+        $client = Client::query()->create(['name' => 'Size client']);
+
+        $this->postWebhook('foodics', $client->webhook_token, '20250615100,00#SMALL01#')
+            ->assertStatus(202);
+    }
+
     public function test_throttle_returns_429_when_limit_exceeded(): void
     {
         config(['wallet.throttle_per_minute' => 3]);
