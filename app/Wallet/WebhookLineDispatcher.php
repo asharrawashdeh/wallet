@@ -10,26 +10,10 @@ use Illuminate\Support\Facades\Bus;
 
 final class WebhookLineDispatcher
 {
-    /**
-     * @param  list<string>  $lines
-     */
+    /** @param list<string> $lines */
     public function dispatchForReceipt(WebhookReceipt $receipt, array $lines): void
     {
-        $jobs = [];
-
-        foreach ($lines as $lineIndex => $rawLine) {
-            if (trim($rawLine) === '') {
-                continue;
-            }
-
-            $jobs[] = new ImportTransactionLineJob(
-                $receipt->id,
-                $receipt->client_id,
-                $receipt->bank,
-                $lineIndex,
-                $rawLine,
-            );
-        }
+        $jobs = $this->buildJobs($receipt, $lines);
 
         if ($jobs === []) {
             WalletLogger::info('Webhook receipt has no non-empty lines; skipping batch dispatch.', [
@@ -39,6 +23,27 @@ final class WebhookLineDispatcher
             return;
         }
 
+        $this->dispatchBatch($receipt, $jobs);
+    }
+
+    /** @return list<ImportTransactionLineJob> */
+    private function buildJobs(WebhookReceipt $receipt, array $lines): array
+    {
+        return collect($lines)
+            ->filter(fn (string $line) => trim($line) !== '')
+            ->map(fn (string $line, int $index) => new ImportTransactionLineJob(
+                $receipt->id,
+                $receipt->client_id,
+                $receipt->bank,
+                $index,
+                $line,
+            ))
+            ->values()
+            ->all();
+    }
+
+    private function dispatchBatch(WebhookReceipt $receipt, array $jobs): void
+    {
         $receiptId = $receipt->id;
 
         // Mark dispatched before launching the batch so the finally callback
@@ -48,8 +53,7 @@ final class WebhookLineDispatcher
         $batch = Bus::batch($jobs)
             ->finally(function (Batch $batch) use ($receiptId) {
                 $status = $batch->failedJobs > 0 ? IngestionStatus::Failed : IngestionStatus::Completed;
-                WebhookReceipt::query()
-                    ->whereKey($receiptId)
+                WebhookReceipt::whereKey($receiptId)
                     ->update(['ingestion_status' => $status]);
 
                 WalletLogger::info('Webhook receipt batch finished.', [

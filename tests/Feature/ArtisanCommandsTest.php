@@ -88,6 +88,48 @@ class ArtisanCommandsTest extends TestCase
             ->expectsOutputToContain('<Notes>');
     }
 
+    public function test_retry_failed_re_dispatches_missing_transactions(): void
+    {
+        $client = Client::query()->create(['name' => 'Retry client']);
+        $body = "20250615100,00#RETRY01#\n20250615200,00#RETRY02#\n20250615300,00#RETRY03#";
+
+        $receipt = WebhookReceipt::query()->create([
+            'client_id' => $client->id,
+            'bank' => 'foodics',
+            'raw_body' => $body,
+            'line_count' => 3,
+            'ingestion_status' => 'failed',
+        ]);
+
+        // Simulate that 1 of 3 transactions already succeeded before the batch failed
+        \App\Models\Transaction::query()->create([
+            'client_id' => $client->id,
+            'reference' => 'RETRY01',
+            'amount' => '100.00',
+            'currency' => 'SAR',
+            'occurred_at' => now(),
+            'bank' => 'foodics',
+        ]);
+
+        $this->artisan('wallet:retry-failed', ['receipt' => $receipt->id])
+            ->assertSuccessful()
+            ->expectsOutputToContain('batch dispatched');
+
+        // Idempotency ensures RETRY01 stays as 1 row; RETRY02 and RETRY03 are new
+        $this->assertDatabaseCount('transactions', 3);
+        $this->assertDatabaseHas('webhook_receipts', [
+            'id' => $receipt->id,
+            'ingestion_status' => 'completed',
+        ]);
+    }
+
+    public function test_retry_failed_with_no_failed_receipts(): void
+    {
+        $this->artisan('wallet:retry-failed')
+            ->assertSuccessful()
+            ->expectsOutputToContain('No failed receipts');
+    }
+
     public function test_health_command_runs_with_empty_db(): void
     {
         $this->artisan('wallet:health')

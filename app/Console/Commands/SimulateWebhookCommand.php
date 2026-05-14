@@ -35,8 +35,7 @@ class SimulateWebhookCommand extends Command
             return self::FAILURE;
         }
 
-        $client = Client::query()->find($clientId);
-        if ($client === null) {
+        if (($client = Client::find($clientId)) === null) {
             $this->error("Client {$clientId} not found.");
 
             return self::FAILURE;
@@ -48,7 +47,17 @@ class SimulateWebhookCommand extends Command
             return self::FAILURE;
         }
 
+        $body = $this->buildBody($bank, $lineCount);
+
+        $this->info("Posting {$lineCount} line(s) to /api/webhooks/{$bank}/***");
+
+        return $this->sendInternalRequest($bank, $client, $body);
+    }
+
+    private function buildBody(string $bank, int $lineCount): string
+    {
         $lines = [];
+
         for ($i = 0; $i < $lineCount; $i++) {
             $ref = str_pad((string) ($i + 1), 10, '0', STR_PAD_LEFT);
             $amount = number_format(mt_rand(100, 99999) / 100, 2, ',', '');
@@ -60,10 +69,12 @@ class SimulateWebhookCommand extends Command
             };
         }
 
-        $body = implode("\n", $lines);
-        $uri = "/api/webhooks/{$bank}/{$client->webhook_token}";
+        return implode("\n", $lines);
+    }
 
-        $this->info("Posting {$lineCount} line(s) to {$uri}");
+    private function sendInternalRequest(string $bank, Client $client, string $body): int
+    {
+        $uri = "/api/webhooks/{$bank}/{$client->webhook_token}";
 
         $request = Request::create($uri, 'POST', content: $body);
         $request->headers->set('Content-Type', 'text/plain');
@@ -72,19 +83,20 @@ class SimulateWebhookCommand extends Command
         if ($secret !== null) {
             $request->headers->set('X-Webhook-Signature', hash_hmac('sha256', $body, $secret));
         }
-        $response = app()->handle($request);
 
+        $response = app()->handle($request);
         $status = $response->getStatusCode();
+
         $this->info("Response status: {$status}");
 
         if ($status >= 200 && $status < 300) {
             $this->info('Webhook accepted. Check logs and wallet:health for results.');
-        } else {
-            $this->error("Webhook rejected with status {$status}.");
 
-            return self::FAILURE;
+            return self::SUCCESS;
         }
 
-        return self::SUCCESS;
+        $this->error("Webhook rejected with status {$status}.");
+
+        return self::FAILURE;
     }
 }

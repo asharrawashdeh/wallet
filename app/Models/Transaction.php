@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -29,5 +30,15 @@ class Transaction extends Model
     public function client(): BelongsTo
     {
         return $this->belongsTo(Client::class);
+    }
+
+    public function scopeByClient(Builder $query, int $clientId): Builder
+    {
+        return $query->where('client_id', $clientId);
+    }
+
+    public function scopeByBank(Builder $query, string $bank): Builder
+    {
+        return $query->where('bank', $bank);
     }
 }

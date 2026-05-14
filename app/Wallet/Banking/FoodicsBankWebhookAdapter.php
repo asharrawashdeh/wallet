@@ -58,20 +58,10 @@ class FoodicsBankWebhookAdapter implements WebhookBankAdapter
             return [];
         }
 
-        $segments = explode('/', $tail);
-        if (count($segments) < 2) {
-            return [];
-        }
-
-        $out = [];
-        for ($i = 0; $i + 1 < count($segments); $i += 2) {
-            $key = trim($segments[$i]);
-            $value = trim($segments[$i + 1]);
-            if ($key !== '') {
-                $out[$key] = $value;
-            }
-        }
-
-        return $out;
+        return collect(explode('/', $tail))
+            ->chunk(2)
+            ->filter(fn ($pair) => $pair->count() === 2 && trim($pair->first()) !== '')
+            ->mapWithKeys(fn ($pair) => [trim($pair->first()) => trim($pair->last())])
+            ->all();
     }
 }

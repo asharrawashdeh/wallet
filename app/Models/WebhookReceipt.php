@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Wallet\Enums\IngestionStatus;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -27,5 +28,10 @@ class WebhookReceipt extends Model
     public function client(): BelongsTo
     {
         return $this->belongsTo(Client::class);
+    }
+
+    public function scopeFailed(Builder $query): Builder
+    {
+        return $query->where('ingestion_status', IngestionStatus::Failed);
     }
 }

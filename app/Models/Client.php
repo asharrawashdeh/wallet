@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Str;
@@ -38,5 +39,10 @@ class Client extends Model
     public function webhookReceipts(): HasMany
     {
         return $this->hasMany(WebhookReceipt::class);
+    }
+
+    public function scopeByToken(Builder $query, string $token): Builder
+    {
+        return $query->where('webhook_token', $token);
     }
 }
