@@ -30,4 +30,10 @@ return [
     | Default: 2 MB.
     */
     'max_body_bytes' => (int) env('WEBHOOK_MAX_BODY_BYTES', 2 * 1024 * 1024),
+
+    /*
+    | Enable or disable wallet-specific logging. When false, all wallet
+    | log calls are silently discarded.
+    */
+    'logging_enabled' => env('WALLET_LOGGING_ENABLED', true),
 ];

@@ -11,7 +11,7 @@ use App\Wallet\WalletIngestionGate;
 use App\Wallet\WebhookLineDispatcher;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
-use Illuminate\Support\Facades\Log;
+use App\Wallet\WalletLogger;
 use InvalidArgumentException;
 
 class WebhookController extends Controller
@@ -26,7 +26,7 @@ class WebhookController extends Controller
         try {
             $this->adapterResolver->resolve($bank);
         } catch (InvalidArgumentException) {
-            Log::warning('Webhook rejected: unsupported bank.', ['bank' => $bank]);
+            WalletLogger::warning('Webhook rejected: unsupported bank.', ['bank' => $bank]);
 
             return response('', 422);
         }
@@ -34,7 +34,7 @@ class WebhookController extends Controller
         $client = Client::query()->where('webhook_token', $token)->first();
 
         if ($client === null) {
-            Log::warning('Webhook rejected: invalid token.', ['bank' => $bank]);
+            WalletLogger::warning('Webhook rejected: invalid token.', ['bank' => $bank]);
 
             return response('', 401);
         }
@@ -57,7 +57,7 @@ class WebhookController extends Controller
             'ingestion_status' => IngestionStatus::PendingDispatch,
         ]);
 
-        Log::info('Webhook received.', [
+        WalletLogger::info('Webhook received.', [
             'receipt_id' => $receipt->id,
             'bank' => $receipt->bank,
             'client_id' => $client->id,

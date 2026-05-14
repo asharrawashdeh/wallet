@@ -12,7 +12,7 @@ use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\Log;
+use App\Wallet\WalletLogger;
 use RuntimeException;
 
 class ImportTransactionLineJob implements ShouldQueue
@@ -54,7 +54,7 @@ class ImportTransactionLineJob implements ShouldQueue
         $dto = $adapter->parseLine($this->rawLine);
 
         if ($dto === null) {
-            Log::error('Unparseable transaction line.', $context + ['raw_line' => $this->rawLine]);
+            WalletLogger::error('Unparseable transaction line.', $context + ['raw_line' => $this->rawLine]);
 
             throw new RuntimeException("Unparseable transaction line at index {$this->lineIndex} for receipt {$this->webhookReceiptId}.");
         }
@@ -73,9 +73,9 @@ class ImportTransactionLineJob implements ShouldQueue
                 'metadata' => $dto->metadata === [] ? null : $dto->metadata,
             ]);
 
-            Log::info('Transaction created.', $context + ['amount' => $dto->amount]);
+            WalletLogger::info('Transaction created.', $context + ['amount' => $dto->amount]);
         } catch (UniqueConstraintViolationException) {
-            Log::info('Duplicate transaction skipped.', $context);
+            WalletLogger::info('Duplicate transaction skipped.', $context);
         }
     }
 }

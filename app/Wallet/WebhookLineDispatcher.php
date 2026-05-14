@@ -7,7 +7,6 @@ use App\Models\WebhookReceipt;
 use App\Wallet\Enums\IngestionStatus;
 use Illuminate\Bus\Batch;
 use Illuminate\Support\Facades\Bus;
-use Illuminate\Support\Facades\Log;
 
 final class WebhookLineDispatcher
 {
@@ -33,7 +32,7 @@ final class WebhookLineDispatcher
         }
 
         if ($jobs === []) {
-            Log::info('Webhook receipt has no non-empty lines; skipping batch dispatch.', [
+            WalletLogger::info('Webhook receipt has no non-empty lines; skipping batch dispatch.', [
                 'receipt_id' => $receipt->id,
             ]);
 
@@ -53,7 +52,7 @@ final class WebhookLineDispatcher
                     ->whereKey($receiptId)
                     ->update(['ingestion_status' => $status]);
 
-                Log::info('Webhook receipt batch finished.', [
+                WalletLogger::info('Webhook receipt batch finished.', [
                     'receipt_id' => $receiptId,
                     'batch_id' => $batch->id,
                     'ingestion_status' => $status->value,
@@ -66,7 +65,7 @@ final class WebhookLineDispatcher
 
         $receipt->update(['batch_id' => $batch->id]);
 
-        Log::info('Webhook receipt batch dispatched.', [
+        WalletLogger::info('Webhook receipt batch dispatched.', [
             'receipt_id' => $receipt->id,
             'batch_id' => $batch->id,
             'job_count' => count($jobs),
